@@ -1,40 +1,32 @@
-// Import required packages
-const { src, dest, series, parallel, watch } = require("gulp");
-const cleanCSS = require("gulp-clean-css");
-const htmlmin = require("gulp-htmlmin");
-const uglify = require("gulp-uglify");
-const imagemin = require("gulp-imagemin");
-const del = require("del");
+name: NodeJS with Gulp
 
-// Clean dist folder
-function clean() {
-  return del(["dist"]);
-}
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
-// Minify HTML
-function html() {
-  return src("*.html")
-    .pipe(htmlmin({ collapseWhitespace: true, removeComments: true }))
-    .pipe(dest("dist"));
-}
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-// Minify CSS
-function css() {
-  return src("**/*.css")
-    .pipe(cleanCSS())
-    .pipe(dest("dist"));
-}
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
 
-// Minify JS
-function js() {
-  return src("**/*.js")
-    .pipe(uglify())
-    .pipe(dest("dist"));
-}
+    steps:
+      - uses: actions/checkout@v4
 
-// Optimize Images
-function images() {
-  return src("assets/images/**/*")
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Gulp build
+        run: npx gulp  return src("assets/images/**/*")
     .pipe(imagemin())
     .pipe(dest("dist/assets/images"));
 }
