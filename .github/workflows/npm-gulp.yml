@@ -1,28 +1,53 @@
-name: NodeJS with Gulp
+// Import required packages
+const { src, dest, series, parallel, watch } = require("gulp");
+const cleanCSS = require("gulp-clean-css");
+const htmlmin = require("gulp-htmlmin");
+const uglify = require("gulp-uglify");
+const imagemin = require("gulp-imagemin");
+const del = require("del");
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+// Clean dist folder
+function clean() {
+  return del(["dist"]);
+}
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+// Minify HTML
+function html() {
+  return src("*.html")
+    .pipe(htmlmin({ collapseWhitespace: true, removeComments: true }))
+    .pipe(dest("dist"));
+}
 
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x, 22.x]
+// Minify CSS
+function css() {
+  return src("**/*.css")
+    .pipe(cleanCSS())
+    .pipe(dest("dist"));
+}
 
-    steps:
-    - uses: actions/checkout@v4
+// Minify JS
+function js() {
+  return src("**/*.js")
+    .pipe(uglify())
+    .pipe(dest("dist"));
+}
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
+// Optimize Images
+function images() {
+  return src("assets/images/**/*")
+    .pipe(imagemin())
+    .pipe(dest("dist/assets/images"));
+}
 
-    - name: Build
-      run: |
-        npm install
-        gulp
+// Watch files for changes (optional for local dev)
+function devWatch() {
+  watch(["*.html", "**/*.css", "**/*.js"], series(build));
+}
+
+// Define tasks
+const build = series(clean, parallel(html, css, js, images));
+
+exports.clean = clean;
+exports.build = build;
+exports.default = build;
+exports.watch = devWatch;
